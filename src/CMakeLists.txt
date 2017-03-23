@@ -1,0 +1,15 @@
+include_directories(${CCOMP_SOURCE_DIR})
+link_directories(${CCOMP_SOURCE_DIR})
+
+file(GLOB files "*.h" "*.c")
+add_executable(ccomp ${files})
+
+add_definitions("-Werror=incompatible-pointer-types")
+add_definitions("-Werror=implicit-function-declaration")
+add_definitions("-Wall")
+add_definitions("-Wextra")
+add_definitions("-Werror=pedantic")
+add_definitions("-ansi")
+add_definitions("-Wno-unused-function")
+add_definitions("-Wno-unused-variable")
+# add_definitions("-Wconversion")
