@@ -10,7 +10,6 @@
 
 #include "position.h"
 
-int read_file(const char* file_name, tagged_str_list* *buffers,
-              int *buffers_len);
+int read_file(const char* file_name, vec_vec_tagged_str *buffers);
 
 #endif

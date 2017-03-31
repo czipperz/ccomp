@@ -12,20 +12,29 @@
 
 #include "compile_file.h"
 #include "parse_args.h"
+#include "terminal.h"
 
-int main(int argc, const char** argv) {
-    arguments args;
+int actual_main(int argc, const char** argv) {
+    arguments args = {0, 0};
     int ret = 0;
-    int i;
+    size_t i;
 
     --argc;
     ++argv;
 
     /* Parse arguments */
-    memset(&args, 0, sizeof(arguments));
     if (parse_args(argc, argv, &args)) {
         ret = 1;
         goto ret;
+    }
+
+    if (args.num_files == 0) {
+        terminal_stderr_set_foreground(terminal_red);
+        terminal_stderr_set_bold();
+        fputs("fatal error:", stderr);
+        terminal_stderr_reset();
+        fputs(" no input files\n", stderr);
+        return 1;
     }
 
     /* Compile each file */

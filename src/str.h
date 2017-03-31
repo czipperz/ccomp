@@ -8,20 +8,31 @@
 #ifndef HEADER_GUARD_STR_H
 #define HEADER_GUARD_STR_H
 
-#include <stdlib.h>
-#include <stdio.h>
+#include <stddef.h>
 
-/* A generic raw string and length pair. */
+#include "vec.h"
+
+/*! \brief A basic string implementation.
+ *
+ * It is compliant with the `vec` concept. */
 typedef struct str {
-    /* May be not null terminated: */ char* str;
-    int len;
+    /* NOT null terminated: */ char* str;
+    size_t len;
+    size_t cap;
 } str;
 
-static void fputstr(str *string, FILE* file) {
-    int i;
-    for (i = 0; i != string->len; ++i) {
-        putc(string->str[i], file);
-    }
-}
+/*! \brief Non binding request to increase the capacity.
+ *
+ * Returns 1 on memory allocation error. */
+int str_reserve(str* self, size_t new_cap);
+
+/*! \brief Reserve an extra element, then insert `str` at the end. */
+int str_push(str* self, char elem);
+
+/*! \brief Non binding request to shrink to size. */
+int str_shrink_to_size(str* self);
+
+/*! Set len to new_len and assign */
+void str_set_len(str* s, size_t new_len);
 
 #endif

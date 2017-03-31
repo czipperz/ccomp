@@ -14,7 +14,7 @@ void destroy_member_type(struct member_type* member_type) {
 }
 
 void destroy_structure_type(struct_type* structure_type) {
-    struct_member_type* member;
+    member_type* member;
     free(structure_type->name.str);
     for (member = structure_type->members;
          member !=

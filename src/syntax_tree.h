@@ -28,8 +28,7 @@ typedef struct integral_type {
 struct type {
     union {
         integral_type integral_type;
-        /* NOT owning: */ struct struct_type* structure_type;
-        /* NOT owning: */ struct union_type* union_type;
+        /* NOT owning: */ struct struct_type* struct_type;
         /* NOT owning: */ type* typedef_type;
     } data;
     enum {
@@ -50,7 +49,9 @@ typedef struct expression {
         } unary_expression;
         struct {
             integral_type type;
-#warning Need to add representation of number
+            union {
+                long l; long double ld; char byte;
+            } value;
         } integral_expression;
         struct {
             str name;
@@ -115,24 +116,21 @@ typedef struct function {
 typedef struct member_type {
     str name;
     type type;
-} struct_member_type, union_member_type;
+} member_type;
 
 typedef struct {
     /* Possibly NULL: */ str name;
     struct member_type* members;
     int num_members;
-} struct_type, union_type;
+} struct_type;
 
 typedef struct syntax_tree {
     function* functions;
     int num_functions;
 } syntax_tree;
 
-void destroy_member_type(struct member_type*);
+void destroy_member_type(member_type*);
 void destroy_structure_type(struct_type*);
-static void destroy_union_type(union_type* type) {
-    destroy_structure_type(type);
-}
 static void destroy_type(type* type) {}
 void destroy_expression(expression*);
 void destroy_statement(statement*);

@@ -17,4 +17,8 @@ void print_fatal(const file_position* position,
 void print_warning(const file_position* position,
                    const char* format, ...);
 
+void print_malloc_error(const char* fname, size_t line);
+#define PRINT_MALLOC_ERROR()                                         \
+    print_malloc_error(__FILE__, __LINE__)
+
 #endif

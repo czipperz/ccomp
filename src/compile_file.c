@@ -14,34 +14,28 @@
 
 #include "alloc.h"
 #include "parse_args.h"
-#include "str.h"
 #include "read_file.h"
 #include "preprocess.h"
+#include "position.h"
+#include "vec.h"
 
 int compile_file(const arguments* args, const char* file_name) {
     int ret = 0;
 
-    tagged_str_list* buffers;
-    int buffers_len;
+    vec_vec_tagged_str buffers = VEC_INIT;
 
-    if (read_file(file_name, &buffers, &buffers_len)) {
+    if (read_file(file_name, &buffers)) {
         ret = 1;
         goto cleanup_buffers;
     }
 
-    if (preprocess(&buffers, buffers + buffers_len)) {
-        ret = 1;
-        goto cleanup_buffers;
-    }
+    /* if (preprocess(&buffers)) { */
+    /*     ret = 1; */
+    /*     goto cleanup_buffers; */
+    /* } */
 
 cleanup_buffers:
-    {
-        int i;
-        for (i = 0; i != buffers_len; ++i) {
-            destroy_tagged_str_list(buffers + i);
-        }
-        free(buffers);
-    }
+    destroy_vec_vec_tagged_str(&buffers);
 
     return ret;
 }

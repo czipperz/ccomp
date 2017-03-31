@@ -12,44 +12,45 @@
 #include <string.h>
 
 #include "alloc.h"
+#include "diagnostics.h"
 #include "str.h"
 #include "terminal.h"
 
 int read_file(const char* file_name,
-              tagged_str_list* *buffers, int *buffers_len) {
+              vec_vec_tagged_str *vvstr) {
     int ret = 0;
     FILE* file;
-    int buffers_max = 16;
-    tagged_str_list* list;
     file_position fpos;
+    size_t str = 0;
+    size_t vstr = 0;
+
+    assert(file_name);
+    assert(vvstr);
 
     fpos.file_name = file_name;
     fpos.y = 0;
     fpos.x = 0;
 
-    assert(file_name);
-    assert(buffers);
-    assert(buffers_len);
-
-    /* Allocate dynamic array of tagged_str_list */
-    *buffers_len = 0;
-    CALLOC(*buffers, buffers_max, sizeof(**buffers), {
-        *buffers = 0;
-        return 1;
-    });
+    /* Add a empty vector at vvstr */
+    {
+        vec_tagged_str temp = VEC_INIT;
+        if (vec_push(vvstr, sizeof(vec_tagged_str), &temp)) {
+            PRINT_MALLOC_ERROR();
+            return 1;
+        }
+    }
 
     /* Allocate first tagged_str_list */
-    list = *buffers;
-    CALLOC(list->strs, BUFFER_LIST_SIZE, sizeof(*list->strs), { return 1; });
-    list->len = 0;
-
-    *buffers_len = 1;
+    vec_reserve(vvstr->ptr + vstr, sizeof(tagged_str), BUFFER_LIST_SIZE);
 
     /* Open the file. */
     file = fopen(file_name, "r");
     if (!file) {
+        terminal_stderr_set_foreground(terminal_red);
+        terminal_stderr_set_bold();
         fprintf(stderr, "Error: %s: Unable to open file.\n",
                 file_name);
+        terminal_stderr_reset();
         ret = 1;
         goto ret;
     }
@@ -58,42 +59,39 @@ int read_file(const char* file_name,
     while (!feof(file) && !ferror(file)) {
         tagged_str data;
 
-        if (list->len >= BUFFER_LIST_SIZE) {
+        /* If vstr is at max size, move to next. */
+        if (str >= BUFFER_LIST_SIZE) {
             /* Reserve another list */
-            if (vector_reserve_another((void**) buffers,
-                                       buffers_len, &buffers_max,
-                                       sizeof(**buffers))) {
+            vec_tagged_str temp = VEC_INIT;
+            if (vec_push(vvstr, sizeof(temp), &temp)) {
                 ret = 1;
                 goto cleanup_file;
             }
 
-            list = *buffers + *buffers_len - 1;
+            ++vstr;
+            str = 0;
 
             /* Create the list */
-            MALLOC(list->strs, BUFFER_LIST_SIZE * sizeof(*list->strs),
-                   {
-                       memset(list, 0, sizeof(*list));
-                       ret = 1;
-                       goto cleanup_file;
-                   });
-            list->len = 0;
-            list->cap = BUFFER_LIST_SIZE;
+            vec_reserve(vvstr->ptr + vstr, sizeof(tagged_str),
+                        BUFFER_LIST_SIZE);
         }
 
         /* We read strings in BUFFER_SIZE increments */
-        MALLOC(data.str, sizeof(char) * BUFFER_SIZE, {
+        data.str.cap = sizeof(char) * BUFFER_SIZE;
+        data.str.str = malloc(data.str.cap);
+        if (!data.str.str) {
             ret = 1;
             goto cleanup_file;
-        });
+        }
 
-        data.len = fread(data.str, sizeof(char), BUFFER_SIZE, file);
+        data.str.len = fread(data.str.str, sizeof(char), BUFFER_SIZE, file);
 
         /* Update file_positions */
         data.fpos = fpos;
-        walk_fpos(&fpos, data.str, data.len);
+        walk_fpos(&fpos, data.str.str, data.str.len);
 
-        list->strs[list->len] = data;
-        ++list->len;
+        vec_push(&vvstr->ptr[vstr], sizeof(tagged_str), &data);
+        ++str;
     }
 
     /* Shrink buffers to size */

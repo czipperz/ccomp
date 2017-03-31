@@ -8,9 +8,11 @@
 #ifndef HEADER_GUARD_PARSE_ARGS_H
 #define HEADER_GUARD_PARSE_ARGS_H
 
+#include <stddef.h>
+
 typedef struct arguments {
     /* NOT null */ const char** files;
-    int num_files;
+    size_t num_files;
 } arguments;
 
 int parse_args(int argc, const char** argv,

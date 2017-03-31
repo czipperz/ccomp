@@ -51,21 +51,23 @@ typedef struct token {
     /* Possibly NULL: */ str string;
 } token;
 
-typedef struct tokens {
-    token* tokens;
-    int num_tokens;
-} tokens;
+typedef struct vec_token {
+    token* ptr;
+    size_t num;
+    size_t cap;
+} vec_token;
 
-typedef struct tokens_vec {
-    tokens* tokens;
-    int num_tokens;
-} tokens_vec;
+typedef struct vec_vec_token {
+    vec_token* ptr;
+    size_t num;
+    size_t cap;
+} vec_vec_token;
 
 void destroy_token(token*);
-void destroy_tokens(tokens*);
-void destroy_tokens_vec(tokens_vec*);
+void destroy_vec_token(vec_token*);
+void destroy_vec_vec_token(vec_vec_token*);
 
-int tokenize(tokens_vec* tokens, const char* file_name,
-             tagged_str_list* strs, tagged_str_list* num_strs);
+int tokenize(vec_vec_token* tokens, const char* file_name,
+             vec_tagged_str* strs_begin, vec_tagged_str* strs_end);
 
 #endif

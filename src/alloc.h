@@ -16,22 +16,6 @@
  * read_file(). */
 #define BUFFER_LIST_SIZE (32)
 
-#define CALLOC(var, num, size, handle)                               \
-    do {                                                             \
-        (var) = calloc((num), (size));                               \
-        if (!(var)) {                                                \
-            handle;                                                  \
-        }                                                            \
-    } while (0)
-
-#define MALLOC(var, size, handle)                                    \
-    do {                                                             \
-        (var) = malloc((size));                                      \
-        if (!(var)) {                                                \
-            handle;                                                  \
-        }                                                            \
-    } while (0)
-
 #define REALLOC(var, size, handle)                                   \
     do {                                                             \
         void* __temp = realloc((var), (size));                       \
@@ -42,9 +26,9 @@
         }                                                            \
     } while (0)
 
-/* If there is not enough space in memory for another element,
- * reallocate it via a doubling scheme. */
-int vector_reserve_another(void* *memory, int *len, int *max,
-                           size_t size);
+/* /\* If there is not enough space in memory for another element, */
+/*  * reallocate it via a doubling scheme. *\/ */
+/* int vector_reserve_another(void* *memory, int *len, int *max, */
+/*                            size_t size); */
 
 #endif

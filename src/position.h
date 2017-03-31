@@ -8,60 +8,70 @@
 #ifndef HEADER_GUARD_POSITION_H
 #define HEADER_GUARD_POSITION_H
 
-#include <ctype.h>
-#include <assert.h>
-#include <stdlib.h>
+#include <stddef.h>
 
-/* The position in the file, note that y and x are always off by 1. */
+#include "str.h"
+#include "vec.h"
+
+/*! \brief The position in the file, note that y and x are always off by 1. */
 typedef struct file_position {
     /* NOT owning, NOT null: */ const char* file_name;
-    /* Add one to get the value to print */ int y, x;
+    /* Add one to get the value to print */ size_t y, x;
 } file_position;
 
-/* A tagged_str is a str that includes a fpos for debugging purposes. */
+/*! \brief A tagged_str is a str that includes a fpos for diagnosage purposes. */
 typedef struct tagged_str {
-    /* Not null terminated, NULL only if len == 0: */ char* str;
-    int len;
+    str str;
     file_position fpos;
 } tagged_str;
 
-void shrink_tagged_str(tagged_str*);
+typedef struct vec_tagged_str {
+    struct tagged_str* ptr;
+    size_t len;
+    size_t cap;
+} vec_tagged_str;
 
-typedef struct tagged_str_list {
-    /* NULL only if len == 0: */ tagged_str* strs;
-    int len;
-    int cap;
-} tagged_str_list;
+typedef struct vec_vec_tagged_str {
+    vec_tagged_str* ptr;
+    size_t len;
+    size_t cap;
+} vec_vec_tagged_str;
 
-void destroy_tagged_str_list(tagged_str_list* list);
+void destroy_vec_tagged_str(vec_tagged_str* self);
+void destroy_vec_vec_tagged_str(vec_vec_tagged_str* self);
 
-/* Used during preprocessing and tokenizing phase as an iterator
+/*! \brief Used during preprocessing and tokenizing phase as an iterator
  * through the file. */
 typedef struct raw_position {
-    /* NOT owning: */ struct tagged_str_list* list;
-    /* NOT owning: */ struct tagged_str* buffer;
-    int index;
+    /* NOT owning: */ vec_tagged_str* list;
+    size_t buffer;
+    size_t index;
 } raw_position;
+
+char rpos_c(const raw_position* rpos);
+tagged_str* rpos_str(const raw_position* rpos);
+void rpos_bounds_check(const raw_position* rpos);
+void rpos_bounds_check_end(const raw_position* rpos, vec_tagged_str* end);
 
 /* Go to the next character in the file.
  * Correctly handles cases where we are at the end of an embedded
  * array.
  * Return if the cursor is at EOF (strings_end). */
 int forward_char(file_position *fpos, raw_position *rpos,
-                 tagged_str_list* strings_end);
+                 vec_tagged_str* strings_end);
 
 /* Run forward_char() until all space/tab characters are exhausted.
  * Return if the cursor is at EOF (strings_end). */
 int forward_through_blanks(file_position *fpos,
                            raw_position *rpos,
-                           tagged_str_list* strings_end);
+                           vec_tagged_str* strings_end);
 
 /* Run forward_char() until all whitespace characters are exhausted.
  * Return if the cursor is at EOF (strings_end). */
 int forward_through_whitespace(file_position *fpos,
                                raw_position *rpos,
-                               tagged_str_list* strings_end);
+                               vec_tagged_str* strings_end);
 
-void walk_fpos(file_position* fpos, const char* begin, int len);
+void walk_fpos(file_position* fpos, const char* begin, size_t len);
 
 #endif

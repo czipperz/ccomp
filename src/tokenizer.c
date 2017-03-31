@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "alloc.h"
+#include "diagnostics.h"
 #include "position.h"
 
 void destroy_token(token* token) {
@@ -20,25 +21,25 @@ void destroy_token(token* token) {
 
     free(token->string.str);
 }
-void destroy_tokens(tokens* tokens) {
-    int i;
+void destroy_vec_token(vec_token* vtoken) {
+    assert(vtoken);
 
-    assert(tokens);
-
-    for (i = 0; i != tokens->num_tokens; ++i) {
-        destroy_token(tokens->tokens + i);
+    while (vtoken->num != 0) {
+        --vtoken->num;
+        destroy_token(vtoken->ptr + vtoken->num);
     }
-    free(tokens->tokens);
+    vtoken->cap = 0;
+    free(vtoken->ptr);
 }
-void destroy_tokens_vec(tokens_vec* tokens_vec) {
-    int i;
+void destroy_vec_vec_token(vec_vec_token* vvtoken) {
+    assert(vvtoken);
 
-    assert(tokens_vec);
-
-    for (i = 0; i != tokens_vec->num_tokens; ++i) {
-        destroy_tokens(tokens_vec->tokens);
+    while (vvtoken->num != 0) {
+        --vvtoken->num;
+        destroy_vec_token(vvtoken->ptr + vvtoken->num);
     }
-    free(tokens_vec->tokens);
+    vvtoken->cap = 0;
+    free(vvtoken->ptr);
 }
 
 static int single_parse(char input, token* token) {
@@ -78,76 +79,80 @@ static int single_parse(char input, token* token) {
 }
 
 static int parse_var_name(token* token, file_position* fpos,
-                          raw_position* rpos,
-                          tagged_str_list* strings_end) {
+                          raw_position* rpos, vec_tagged_str* end) {
     assert(token);
     assert(fpos);
-    assert(rpos);
-    assert(strings_end);
+    rpos_bounds_check_end(rpos, end);
 
-    while (isalnum(rpos->buffer->str[rpos->index])) {
-        REALLOC(token->string.str, token->string.len + 1, goto fail);
-        ++token->string.len;
-        token->string.str[token->string.len - 1] =
-            rpos->buffer->str[rpos->index];
-        forward_char(fpos, rpos, strings_end);
+    while (isalnum(rpos_c(rpos)) || rpos_c(rpos) == '_') {
+        char c = rpos_c(rpos);
+        if (vec_push(&token->string, sizeof(char), &c)) {
+            PRINT_MALLOC_ERROR();
+            return 1;
+        }
+        if (forward_char(fpos, rpos, end)) {
+            return 1;
+        }
     }
 
     return 0;
-fail:
-    return 1;
 }
 
-int tokenize(tokens_vec *tokens_v, const char* fname,
-             tagged_str_list* strs, tagged_str_list* strs_end) {
+int tokenize(vec_vec_token *vvtoken, const char* fname,
+             vec_tagged_str* vvstr, vec_tagged_str* end) {
     file_position fpos;
     raw_position rpos;
-    tokens* tokens = tokens_v->tokens;
+    vec_token* vtoken;
 
-    assert(tokens_v);
+    assert(vvtoken);
     assert(fname);
-    assert(strs);
-    assert(strs_end);
+    assert(vvstr);
+    assert(end);
+
+    vtoken = vvtoken->ptr;
+    assert(vtoken);
 
     fpos.file_name = fname;
     fpos.y = 0;
     fpos.x = 0;
-    rpos.list = strs;
-    rpos.buffer = strs->strs;
+    rpos.list = vvstr;
+    rpos.buffer = 0;
     rpos.index = 0;
 
-    CALLOC(tokens_v->tokens, 1, sizeof(*tokens_v->tokens), return 1);
-    tokens_v->num_tokens = 1;
+    if (vec_reserve(vvtoken, sizeof(vec_token), 1)) {
+        return 1;
+    }
 
     while (1) {
         token token;
         char current, next;
         while (1) {
-            current = rpos.buffer->str[rpos.index];
+            current = rpos_c(&rpos);
             if (!isspace(current)) {
                 break;
             }
-            if (forward_char(&fpos, &rpos, strs_end)) {
+            if (forward_char(&fpos, &rpos, end)) {
                 goto ret;
             }
         }
         if (isalpha(current) || current == '_') {
-            if (forward_char(&fpos, &rpos, strs_end)) {
-                return 1;
-            }
-            MALLOC(token.string.str, 1, goto fail);
-            token.string.str[0] = current;
-            token.string.len = 1;
-            if (parse_var_name(&token, &fpos, &rpos, strs_end)) {
-                free(token.string.str);
+            memset(&token.string, 0, sizeof(token.string));
+            if (str_push(&token.string, current)) {
+                PRINT_MALLOC_ERROR();
                 goto fail;
+            }
+            if (!forward_char(&fpos, &rpos, end)) {
+                if (parse_var_name(&token, &fpos, &rpos, end)) {
+                    free(token.string.str);
+                    goto fail;
+                }
             }
             goto add_it;
         }
-        if (forward_char(&fpos, &rpos, strs_end)) {
-            if (rpos.buffer->str[rpos.index] == ';') {
+        if (forward_char(&fpos, &rpos, end)) {
+            if (rpos_c(&rpos) == ';') {
                 token.tag = token_semicolon;
-            } else if (rpos.buffer->str[rpos.index] == '}') {
+            } else if (rpos_c(&rpos) == '}') {
                 token.tag = token_close_curly;
             } else {
                 goto fail;
@@ -155,7 +160,7 @@ int tokenize(tokens_vec *tokens_v, const char* fname,
             memset(&token.string, 0, sizeof(token.string));
             continue;
         }
-        next = rpos.buffer->str[rpos.index];
+        next = rpos_c(&rpos);
         if (isspace(next)) {
             if (single_parse(current, &token)) {
                 goto add_it;
@@ -163,15 +168,14 @@ int tokenize(tokens_vec *tokens_v, const char* fname,
                 goto fail;
             }
         } else {
-            fputs("ADD CASES", stderr);
-            abort();
+            assert(0);
         }
 
 add_it:
-        REALLOC(tokens_v->tokens, sizeof(token) * tokens->num_tokens,
-                { assert(0); });
-        ++tokens_v->num_tokens;
-        tokens->tokens[tokens->num_tokens - 1] = token;
+        if (vec_push(vtoken, sizeof(token), &token)) {
+            PRINT_MALLOC_ERROR();
+            goto fail;
+        }
         continue;
     }
 
@@ -179,6 +183,6 @@ ret:
     return 0;
 
 fail:
-    destroy_tokens_vec(tokens_v);
+    destroy_vec_vec_token(vvtoken);
     return 1;
 }

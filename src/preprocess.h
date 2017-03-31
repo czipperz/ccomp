@@ -10,6 +10,6 @@
 
 #include "position.h"
 
-int preprocess(tagged_str_list* *buffers, tagged_str_list* buffers_end);
+int preprocess(vec_vec_tagged_str *buffers);
 
 #endif
