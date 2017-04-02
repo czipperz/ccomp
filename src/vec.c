@@ -32,7 +32,7 @@ static int _realloc(struct vec* self, size_t size, size_t new_cap) {
 static int _reserve(struct vec* self, size_t size, size_t new_cap) {
     assert(self);
     if (new_cap > self->cap) {
-        if (new_cap <= self->cap * 2) {
+        if (new_cap < self->cap * 2) {
             new_cap = self->cap * 2;
         }
         return _realloc(self, size, new_cap);
@@ -44,9 +44,6 @@ int vec_reserve(void* s, size_t size, size_t new_cap) {
     struct vec* self = s;
     assert(self);
     if (new_cap > self->cap) {
-        if (new_cap <= self->cap * 2) {
-            new_cap = self->cap * 2;
-        }
         return _realloc(self, size, new_cap);
     }
     return 0;
@@ -57,7 +54,7 @@ int vec_insert(void* s, size_t size, size_t index, void* elem) {
     assert(self);
     assert(elem);
     assert(index <= self->len);
-    if (_reserve(self, self->len + 1, size)) {
+    if (_reserve(self, size, self->len + 1)) {
         return 1;
     }
     memmove(size * (index + 1) + self->ptr, size * index + self->ptr,
