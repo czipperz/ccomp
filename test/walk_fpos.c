@@ -1,23 +1,21 @@
+#include "test.h"
 #include "position.h"
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
 
-static void _1() {
+TEST(_1) {
     file_position fpos = {"", 0, 0};
     walk_fpos(&fpos, "hi", 2);
-    assert(fpos.y == 0);
-    assert(fpos.x == 2);
+    ASSERT(fpos.y == 0);
+    ASSERT(fpos.x == 2);
 }
+END_TEST
 
-static void _2() {
+TEST(_2) {
     file_position fpos = {"", 0, 0};
     walk_fpos(&fpos, "hi\nbye", 6);
-    assert(fpos.y == 1);
-    assert(fpos.x == 3);
+    ASSERT(fpos.y == 1);
+    ASSERT(fpos.x == 3);
 }
+END_TEST
 
-void test_walk_fpos() {
-    _1();
-    _2();
-}
+static int (*tests[])() = {_1, _2};
+RUN(test_walk_fpos)

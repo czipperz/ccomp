@@ -1,5 +1,11 @@
+#define TEST(x)                                                      \
+    do {                                                             \
+        int test_##x();                                              \
+        test_##x();                                                  \
+    } while (0)
+
 int main() {
-    void test_walk_fpos();
-    test_walk_fpos();
+    TEST(walk_fpos);
+    TEST(vec);
     return 0;
 }
