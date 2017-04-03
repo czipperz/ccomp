@@ -8,8 +8,10 @@ include_directories(${CCOMP_SOURCE_DIR}/src)
 link_directories(${CCOMP_SOURCE_DIR}/src)
 
 file(GLOB files "*.h" "*.c")
-add_executable(ccomp ${files} ../main.c)
+add_executable(ccomp ${files})
+add_executable(tests ${files})
 
+target_compile_definitions(tests PRIVATE TEST_MODE=1)
 add_definitions("-Werror=incompatible-pointer-types")
 add_definitions("-Werror=implicit-function-declaration")
 add_definitions("-Wall")

@@ -25,6 +25,8 @@ typedef struct tagged_str {
     file_position fpos;
 } tagged_str;
 
+#define TAGGED_STR_INIT {VEC_INIT, {0, 0, 0}}
+
 typedef struct vec_tagged_str {
     struct tagged_str* ptr;
     size_t len;

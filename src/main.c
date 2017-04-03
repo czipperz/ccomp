@@ -5,16 +5,18 @@
  * Copyright (c) 2017 Chris Gregory czipperz@gmail.com
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+
+#if !TEST_MODE
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "compile_file.h"
 #include "parse_args.h"
 #include "terminal.h"
 
-int actual_main(int argc, const char** argv) {
+int main(int argc, const char** argv) {
     arguments args = {0, 0};
     int ret = 0;
     size_t i;
@@ -51,3 +53,25 @@ cleanup_parse_args:
 ret:
     return ret;
 }
+
+#else
+#include "test.h"
+
+int failures = 0;
+int successes = 0;
+
+#define run(test)                                                    \
+    do {                                                             \
+        void test();                                                 \
+        test();                                                      \
+    } while (0)
+
+int main() {
+    run(test_vec);
+    run(test_str);
+    run(test_position);
+    /* run(test_delete_block_comments); */
+    printf("%d of %d succeeded.\n", successes, failures + successes);
+    return failures;
+}
+#endif

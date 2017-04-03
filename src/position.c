@@ -166,3 +166,46 @@ void walk_fpos(file_position* fpos, const char* begin, size_t len) {
     }
     fpos->x += len - (iterator - begin);
 }
+
+#if TEST_MODE
+#include "test.h"
+
+TEST(_forward_char_1) {
+    file_position fpos = {"", 0, 0};
+    raw_position rpos = VEC_INIT;
+    vec_vec_tagged_str vvstr = VEC_INIT;
+    vvstr_of(&vvstr, "HI");
+}
+END_TEST
+
+TEST(_walk_fpos_1) {
+    file_position fpos = {"", 0, 0};
+    walk_fpos(&fpos, "hi", 2);
+    ASSERT(fpos.y == 0);
+    ASSERT(fpos.x == 2);
+}
+END_TEST
+
+TEST(_walk_fpos_2) {
+    file_position fpos = {"", 0, 0};
+    walk_fpos(&fpos, "hi\nbye", 6);
+    ASSERT(fpos.y == 1);
+    ASSERT(fpos.x == 3);
+}
+END_TEST
+
+TEST(_walk_fpos_3) {
+    file_position fpos = {"", 0, 0};
+    walk_fpos(&fpos, "hihihi\n\n\n\nbye\n", 14);
+    ASSERT(fpos.y == 5);
+    ASSERT(fpos.x == 0);
+}
+END_TEST
+
+void test_position() {
+    RUN(_forward_char_1);
+    RUN(_walk_fpos_1);
+    RUN(_walk_fpos_2);
+    RUN(_walk_fpos_3);
+}
+#endif
